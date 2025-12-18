@@ -1,10 +1,10 @@
-# PsyMitrix Backend - Production Deployment Guide
+# python-service Backend - Production Deployment Guide
 
-This guide details the steps to deploy the PsyMitrix Backend to a shared Linux server (Ubuntu/Debian assumed). It is designed to allow this application to coexist safely with other applications running on the same server.
+This guide details the steps to deploy the python-service Backend to a shared Linux server (Ubuntu/Debian assumed). It is designed to allow this application to coexist safely with other applications running on the same server.
 
 ## 1. Deployment Summary
 
-- **App Name**: `psymitrix-backend`
+- **App Name**: `python-service-backend`
 - **Python Version**: 3.10+
 - **Port**: `8001` (Adjusted to avoid default 8000)
 - **Database**: MySQL
@@ -38,17 +38,17 @@ sudo apt install python3-full python3-pip python3-venv ffmpeg -y
 Navigate to your deployment directory (e.g., `/var/www/` or user home).
 
 ```bash
-# Example: Deploying to /var/www/psymitrix
-sudo mkdir -p /var/www/psymitrix
-sudo chown -R $USER:$USER /var/www/psymitrix
+# Example: Deploying to /var/www/python-service
+sudo mkdir -p /var/www/python-service
+sudo chown -R $USER:$USER /var/www/python-service
 # Upload your files here or clone via git
-# cd /var/www/psymitrix
+# cd /var/www/python-service
 ```
 
 ### 3.2. Directory Structure
 Ensure your directory looks like this:
 ```
-/var/www/psymitrix/
+/var/www/python-service/
 ├── app/
 │   ├── main.py
 │   ├── services/
@@ -64,7 +64,7 @@ Ensure your directory looks like this:
 Isolate dependencies to avoid conflicts with other apps.
 
 ```bash
-cd /var/www/psymitrix
+cd /var/www/python-service
 python3 -m venv venv
 source venv/bin/activate
 ```
@@ -119,7 +119,7 @@ chmod 755 generated_reports
 Before setting up the service, verify the app runs.
 
 ```bash
-# From /var/www/psymitrix with venv activated
+# From /var/www/python-service with venv activated
 uvicorn app.main:app --host 0.0.0.0 --port 8001
 ```
 
@@ -138,7 +138,7 @@ We will use **Systemd** to keep the app running and **Gunicorn** as a production
 
 ### 6.1. Create Service File
 ```bash
-sudo nano /etc/systemd/system/psymitrix.service
+sudo nano /etc/systemd/system/python-service.service
 ```
 
 ### 6.2. Service Configuration
@@ -146,15 +146,15 @@ Paste this content. **Update User, Group, and paths.**
 
 ```ini
 [Unit]
-Description=PsyMitrix FastAPI Backend
+Description=python-service FastAPI Backend
 After=network.target
 
 [Service]
 User=ubuntu
 Group=www-data
-WorkingDirectory=/var/www/psymitrix
-EnvironmentFile=/var/www/psymitrix/.env
-ExecStart=/var/www/psymitrix/venv/bin/gunicorn -w 3 -k uvicorn.workers.UvicornWorker app.main:app --bind 127.0.0.1:8001 --timeout 120
+WorkingDirectory=/var/www/python-service
+EnvironmentFile=/var/www/python-service/.env
+ExecStart=/var/www/python-service/venv/bin/gunicorn -w 3 -k uvicorn.workers.UvicornWorker app.main:app --bind 127.0.0.1:8001 --timeout 120
 
 # Restart automatically if it crashes
 Restart=always
@@ -167,13 +167,18 @@ WantedBy=multi-user.target
 ### 6.3. Start and Enable
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl start psymitrix
-sudo systemctl enable psymitrix
+sudo systemctl start python-service
+sudo systemctl enable python-service
+```
+
+### see Logs
+```bash
+ sudo journalctl -u python-service -f
 ```
 
 Check status:
 ```bash
-sudo systemctl status psymitrix
+sudo systemctl status python-service
 ```
 
 ---
@@ -190,7 +195,7 @@ Configure Nginx to route traffic to your app. This allows you to host it alongsi
 
 ### 7.1. Create Config
 ```bash
-sudo nano /etc/nginx/sites-available/psymitrix
+sudo nano /etc/nginx/sites-available/python-service
 ```
 
 ### 7.2. Configuration Content (Subdomain Example)
@@ -216,14 +221,14 @@ server {
 
     # Serve static files if needed
     location /public/ {
-        alias /var/www/psymitrix/public/;
+        alias /var/www/python-service/public/;
     }
 }
 ```
 
 ### 7.3. Activate and Test
 ```bash
-sudo ln -s /etc/nginx/sites-available/psymitrix /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/python-service /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl reload nginx
 ```
@@ -235,7 +240,7 @@ sudo systemctl reload nginx
 ### View Logs
 ```bash
 # App logs (Systemd)
-journalctl -u psymitrix -f
+journalctl -u python-service -f
 
 # Nginx logs
 tail -f /var/log/nginx/error.log
@@ -244,16 +249,16 @@ tail -f /var/log/nginx/error.log
 ### Restart Application
 After code changes:
 ```bash
-sudo systemctl restart psymitrix
+sudo systemctl restart python-service
 ```
 
 ### Update Deploy
 ```bash
-cd /var/www/psymitrix
+cd /var/www/python-service
 git pull origin main
 source venv/bin/activate
 pip install -r requirements.txt  # If new deps added
-sudo systemctl restart psymitrix
+sudo systemctl restart python-service
 ```
 
 ## 9. Conflict Prevention on Shared Server
