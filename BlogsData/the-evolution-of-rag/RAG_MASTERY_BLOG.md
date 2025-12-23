@@ -50,29 +50,34 @@ Understanding the flow of data is crucial. Here is how **TheUltimateRAG** handle
 ```mermaid
 flowchart TD
     User([User Request]) --> API[FastAPI Endpoint]
-    
-    subgraph Security Layer
+
+    subgraph Security["Security Layer"]
         API --> Auth{Has User ID?}
-        Auth -- Yes --> Filter1[Construct Filter:\n(User_ID == X) OR (Public)]
-        Auth -- No --> Filter2[Construct Filter:\n(Public Only)]
+        Auth -- Yes --> Filter1[Construct Filter<br/>User ID = X OR Public]
+        Auth -- No --> Filter2[Construct Filter<br/>Public Only]
     end
-    
-    subgraph "Core RAG Engine"
-        Filter1 --> Retriever
+
+    subgraph Core["Core RAG Engine"]
+        Filter1 --> Retriever[Retriever]
         Filter2 --> Retriever
-        Retriever -->|Query Vector DB| Chroma[(ChromaDB)]
-        Chroma -->|Return Mixed Docs| Context[Context Window]
-        
-        Memory[(Session History)] -->|Inject Previous Chat| Context
+        Retriever -->|Vector Query| Chroma[(ChromaDB)]
+        Chroma -->|Return Documents| Context[Context Window]
+
+        Memory[(Session History)] -->|Inject Chat History| Context
     end
-    
-    Context --> LLM[LLM (GPT-3.5/4)]
+
+    Context --> LLM[LLM Service]
     LLM --> Response([Final Answer])
-    
-    classDef security fill:#ffcdd2,stroke:#c62828,stroke-width:2px;
-    classDef core fill:#bbdefb,stroke:#1565c0,stroke-width:2px;
-    class Auth,Filter1,Filter2 security;
-    class Retriever,Memory,Context,LLM core;
+
+    classDef security fill:#FDECEA,stroke:#D32F2F,color:#7F0000,stroke-width:2px
+    classDef core fill:#E3F2FD,stroke:#1565C0,color:#0D47A1,stroke-width:2px
+    classDef storage fill:#ECEFF1,stroke:#455A64,color:#263238,stroke-width:2px
+    classDef llm fill:#FCE4EC,stroke:#C2185B,color:#880E4F,stroke-width:2px
+
+    class Auth,Filter1,Filter2 security
+    class Retriever,Context core
+    class Memory,Chroma storage
+    class LLM llm
 ```
 
 ---
@@ -116,3 +121,4 @@ This granularity is what makes a RAG system **usable**.
 Building an AI app is easy. Building a *secure, usable* AI app is hard. **TheUltimateRAG** handles the hard parts—memory, security, and flexibility—so you can focus on your prompt engineering and product logic.
 
 [**Get Started on GitHub**](https://github.com/Matrixxboy/TheUnltimateRAG)
+
